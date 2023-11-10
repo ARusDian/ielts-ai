@@ -71,6 +71,7 @@ export const getGCPCredentials = () => {
 
 
 async function authenticateImplicitWithAdc() {
+    console.log(process.env.GCP_PRIVATE_KEY, process.env.GCP_PROJECT_ID, process.env.GCP_SERVICE_ACCOUNT_EMAIL);
     // This snippet demonstrates how to list buckets.
     // NOTE: Replace the client created below with the client required for your application.
     // Note that the credentials are not specified when constructing the client.
