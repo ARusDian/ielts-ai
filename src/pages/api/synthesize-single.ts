@@ -52,15 +52,30 @@ export default function handler(
     });
 }
 
+export const getGCPCredentials = () => {
+    // for Vercel, use environment variables
+    return process.env.GOOGLE_PRIVATE_KEY
+        ? {
+            credentials: {
+                client_email: process.env.GCLOUD_SERVICE_ACCOUNT_EMAIL,
+                private_key: process.env.GOOGLE_PRIVATE_KEY,
+            },
+            projectId: process.env.GCP_PROJECT_ID,
+        }
+        // for local development, use gcloud CLI
+        : {
+            projectId: projectId
+        };
+};
+
+
 
 async function authenticateImplicitWithAdc() {
     // This snippet demonstrates how to list buckets.
     // NOTE: Replace the client created below with the client required for your application.
     // Note that the credentials are not specified when constructing the client.
     // The client library finds your credentials using ADC.
-    const storage = new Storage({
-        projectId,
-    });
+    const storage = new Storage(getGCPCredentials());
     const [buckets] = await storage.getBuckets();
     console.log('Buckets:');
 
