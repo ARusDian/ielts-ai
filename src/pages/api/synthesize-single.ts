@@ -71,6 +71,7 @@ export const getGCPCredentials = () => {
 
 
 async function authenticateImplicitWithAdc() {
+    console.log(process.env.GOOGLE_PRIVATE_KEY)
     // This snippet demonstrates how to list buckets.
     // NOTE: Replace the client created below with the client required for your application.
     // Note that the credentials are not specified when constructing the client.
