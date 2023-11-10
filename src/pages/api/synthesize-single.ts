@@ -16,6 +16,8 @@ export default function handler(
 
             const text = req.body.text;
 
+
+
             const request = {
                 input: { text: text },
                 voice: { languageCode: 'en-GB', name: 'en-GB-Wavenet-A' },
@@ -31,11 +33,15 @@ export default function handler(
             const [response] = await client.synthesizeSpeech(request);
             const writeFile = util.promisify(fs.writeFile);
             const currentDate = new Date().getTime()
-            await writeFile('public/audio/outputSynthesizeFile/outputFile'+currentDate+'.mp3', response.audioContent, 'binary');
+            const dir = 'public/audio/outputSynthesizeFile'
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir);
+            }
+            await writeFile(dir + '/outputFile' + currentDate + '.mp3', response.audioContent, 'binary');
             console.log(`Audio content written to file: ${'public/audio/outputFile'}`);
             res.status(200).json({
                 ...response,
-                src: 'audio/outputSynthesizeFile/outputFile'+currentDate+'.mp3'
+                src: 'audio/outputSynthesizeFile/outputFile' + currentDate + '.mp3'
             })
         });
     }
