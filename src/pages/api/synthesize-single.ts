@@ -14,9 +14,26 @@ export default function handler(
         await authenticateImplicitWithAdc().then(async () => {
             const client = new textToSpeech.TextToSpeechClient();
 
-            const text = req.body.text;
+            const { text, audio, user } = req.body;
+            
+            
+            // safe base64 wav file to disk
+            const base64Data = audio.replace(/^data:audio\/wav;base64,/, '');
+            const currentDate = new Date().getTime()
 
+            if (!fs.existsSync('public/audio/Input')) {
+                fs.mkdirSync('public/audio/Input');
+            }
 
+            const path = 'public/audio/Input/' + user + '/';
+            const fileName = user + currentDate + '.wav'
+
+            if (!fs.existsSync(path)) {
+                fs.mkdirSync(path);
+            }
+            fs.writeFileSync(path + fileName, base64Data, 'base64');
+
+            const writeFile = util.promisify(fs.writeFile);
 
             const request = {
                 input: { text: text },
@@ -31,8 +48,6 @@ export default function handler(
                 },
             };
             const [response] = await client.synthesizeSpeech(request);
-            const writeFile = util.promisify(fs.writeFile);
-            const currentDate = new Date().getTime()
             const dir = 'public/audio/outputSynthesizeFile'
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir);
