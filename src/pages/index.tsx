@@ -19,7 +19,36 @@ import 'rodal/lib/rodal.css';
 import router from "next/router";
 import { useRecordVoice } from "@/hooks/useRecordVoice";
 
-
+type ResultData = {
+    fluency_and_coherence: {
+        "avoid silence or hesitation?": string,
+        "Speak at length on each topic?": string,
+        "Use words to connect ideas?": string,
+        "Score": string,
+    },
+    lexical_resource: {
+        "Use a wide range of vocabulary?": string,
+        "Use idioms and collocation?": string,
+        "Paraphrase?": string,
+        "Score": string,
+    },
+    grammatical_range_and_accuracy: {
+        "Speak in complex sentences?": string,
+        "Use a variety of grammatical forms?": string,
+        "Avoid grammatical mistakes?": string,
+        "Score": string,
+    },
+    pronunciation: {
+        "Pronounce words accurately?": string,
+        "Join sounds together?": string,
+        "Vary intonation?": string,
+        "Score": string,
+    },
+    general_feedback: {
+        "comments": string,
+        "average_score": string,
+    },
+}
 
 
 export default function index() {
@@ -32,7 +61,7 @@ export default function index() {
         dangerouslyAllowBrowser: true
     });
 
-   
+
     const {
         transcript,
         listening,
@@ -60,38 +89,7 @@ export default function index() {
     //     correct_text: string
     // } | null>()
 
-    const [result, setResult] =  useState<{
-        scores: {
-            "fluency_and_coherence" : {
-                "avoid silence or hesitation?": string,
-                "Speak at length on each topic?" : string,
-                "Use words to connect ideas?" : string,
-                "Score" : number,
-            },
-            "lexical_resource": {
-                "Use a wide range of vocabulary?": string,
-                "Use idioms and collocation?" : string,
-                "Paraphrase?" : string,
-                "Score" : number,
-            },
-            "grammatical_range_and_accuracy": {
-                "Speak in complex sentences?": string,
-                "Use a variety of grammatical forms?" : string,
-                "Avoid grammatical mistakes?" : string,
-                "Score" : number,
-            },
-            "pronunciation": {
-                "Pronounce words accurately?": string,
-                "Join sounds together?" : string,
-                "Vary intonation?" : string,
-                "Score" : number,
-            },
-            "general_feedback": {
-                "comments": string,
-                "average_score": number,
-            }  
-        }
-    } | null>();
+    const [result, setResult] = useState<ResultData | null>();
 
 
     const [errorResult, setErrorResult] = useState<{
@@ -102,7 +100,7 @@ export default function index() {
         message: ""
     });
 
-    
+
 
     useEffect(() => {
         if (scrollContainerRef.current) {
@@ -128,106 +126,103 @@ export default function index() {
             const maxAttempt = 10;
             console.log("getting Result...")
             let isDone = false;
-          
+
             const assessmentAspect = {
-                0: {	
+                0: {
                     "fluency_and_coherence": 'does not attend',
                     "lexical_resource": 'does not attend',
                     "grammatical_range_and_accuracy": 'does not attend',
                     "pronunciation": 'does not attend',
                 },
-                1: {	
+                1: {
                     "fluency_and_coherence": 'no communication possible and no rateable language',
                     "lexical_resource": 'no communication possible and no rateable language',
                     "grammatical_range_and_accuracy": 'no communication possible and no rateable language',
                     "pronunciation": 'no communication possible and no rateable language',
                 },
-                2: {	
+                2: {
                     "fluency_and_coherence": 'pauses lengthily before most words, little communication possible',
                     "lexical_resource": 'only produces isolated words or memorised utterances',
                     "grammatical_range_and_accuracy": 'cannot produce basic sentence forms',
                     "pronunciation": 'speech is often unintelligible',
                 },
-                3: {	
+                3: {
                     "fluency_and_coherence": 'speaks with long pauses, has limited ability to link simple sentences, gives only simple responses and is frequently unable to convey basic message',
                     "lexical_resource": 'uses simple vocabulary to convey personal information, has insufficient vocabulary for less familiar topics',
                     "grammatical_range_and_accuracy": 'attempts basic sentence forms but with limited success, or relies on apparently memorised utterances, makes numerous errors except in memorised expressions',
                     "pronunciation": 'shows some of the features of Band 2 and some, but not all, of the positive features of Band 4',
                 },
-                4: {	
+                4: {
                     "fluency_and_coherence": 'cannot respond without noticeable pauses and may speak slowly, with frequent repetition and self-correction, links basic sentences but with repetitious use of simple connectives and some breakdowns in coherence',
                     "lexical_resource": 'is able to talk about familiar topics but can only convey basic meaning on unfamiliar topics and makes frequent errors in word choice, rarely attempts paraphrase',
                     "grammatical_range_and_accuracy": 'produces basic sentence forms and some correct simple sentences but subordinate structures are rare, errors are frequent and may lead to misunderstanding',
                     "pronunciation": 'uses a limited range of pronunciation features, attempts to control features but lapses are frequent, mispronunciations are frequent and cause some difficulty for the listener',
                 },
-                5: {	
+                5: {
                     "fluency_and_coherence": 'usually maintains flow of speech but uses repetition, self-correction and/or slow speech to keep going, may over-use certain connectives and discourse markers, produces simple speech fluently, but more complex communication causes fluency problems',
                     "lexical_resource": 'manages to talk about familiar and unfamiliar topics but uses vocabulary with limited flexibility, attempts to use paraphrase but with mixed success',
                     "grammatical_range_and_accuracy": 'produces basic sentence forms with reasonable accuracy, uses a limited range of more complex structures, but these usually contain errors and may cause some comprehension problems',
                     "pronunciation": 'shows all the positive features of Band 4 and some, but not all, of the positive features of Band 6',
                 },
-                6: {	
+                6: {
                     "fluency_and_coherence": 'is willing to speak at length, though may lose coherence at times due to occasional repetition, self-correction or hesitation, uses a range of connectives and discourse markers but not always appropriately',
                     "lexical_resource": 'has a wide enough vocabulary to discuss topics at length and make meaning clear in spite of inappropriacies, generally paraphrases successfully',
                     "grammatical_range_and_accuracy": 'uses a mix of simple and complex structures, but with limited flexibility, may make frequent mistakes with complex structures, though these rarely cause comprehension problems',
                     "pronunciation": 'uses a range of pronunciation     features with mixed control, shows some effective use of features but this is not sustained, can generally be understood throughout, though mispronunciation of individual words or sounds reduces clarity at times',
                 },
-                7: {	
+                7: {
                     "fluency_and_coherence": 'speaks at length without noticeable effort or loss of coherence, may demonstrate language-related hesitation at times, or some repetition and/or self-correction, uses a range of connectives and discourse markers with some flexibility',
                     "lexical_resource": 'uses vocabulary resource flexibly to discuss a variety of topics, uses some less common and idiomatic vocabulary and shows some awareness of style and collocation, with some inappropriate choices, uses paraphrase effectively',
                     "grammatical_range_and_accuracy": 'uses a range of complex structures with some flexibility, frequently produces error-free sentences, though some grammatical mistakes persist',
                     "pronunciation": 'shows all the positive features of Band 6 and some, but not all, of the positive features of Band 8',
                 },
-                8: {	
+                8: {
                     "fluency_and_coherence": 'speaks fluently with only occasional repetition or self-correction; hesitation is usually content-related and only rarely to search for language, develops topics coherently and appropriately',
                     "lexical_resource": 'uses a wide vocabulary resource readily and flexibly to convey precise meaning, uses less common and idiomatic vocabulary skilfully, with occasional inaccuracies, uses paraphrase effectively as required',
                     "grammatical_range_and_accuracy": 'uses a wide range of structures flexibly, produces a majority of error-free sentences with only very occasional inappropriacies or basic/nonsystematic errors',
                     "pronunciation": 'uses a wide range of pronunciation features, sustains flexible use of features, with only occasional lapses, is easy to understand throughout; L1 accent has minimal effect on intelligibility',
                 },
-                9: {	
+                9: {
                     "fluency_and_coherence": 'speaks fluently with only rare repetition or self-correction; any hesitation is content-related rather than to find words or grammar, speaks coherently with fully appropriate cohesive features, develops topics fully and appropriately',
                     "lexical_resource": 'uses vocabulary with full flexibility and precision in all topics, uses idiomatic language naturally and accurately',
                     "grammatical_range_and_accuracy": 'uses a full range of structures naturally and appropriately, produces consistently accurate structures apart from ‘slips’ characteristic of native speaker speech',
                     "pronunciation": 'uses a full range of pronunciation features with precision and subtlety, sustains flexible use of features throughout, is effortless to understand',
                 },
             };
-            
+
             const assessmentFormat = {
-                "fluency_and_coherence" : {
+                "fluency_and_coherence": {
                     "avoid silence or hesitation?": '[please this by your judgment based on the provided input, example but must not be same: Willing to engage in conversation, with occasional hesitation]',
-                    "Speak at length on each topic?" : '[please this by your judgment based on the provided input, example but must not be same: Included relevant detail]',
-                    "Use words to connect ideas?" : '[please this by your judgment based on the provided input, example but must not be same: As appropriate]',
-                    "Score" : '[give it based on the above pointsm , must be round number]',
+                    "Speak at length on each topic?": '[please this by your judgment based on the provided input, example but must not be same: Included relevant detail]',
+                    "Use words to connect ideas?": '[please this by your judgment based on the provided input, example but must not be same: As appropriate]',
+                    "Score": '[give it based on the above points , must be round number]',
                 },
                 "lexical_resource": {
                     "Use a wide range of vocabulary?": '[please this by your judgment based on the provided input, example but must not be same: Sufficient to discuss topics at some length]',
-                    "Use idioms and collocation?" : '[please this by your judgment based on the provided input, example but must not be same: eaning usually clear despite some inappropriate choices]',
-                    "Paraphrase?" : '[please this by your judgment based on the provided input, example but must not be same: Generally successful]',
-                    "Score" : '[give it based on the above points, must be round number]',
+                    "Use idioms and collocation?": '[please this by your judgment based on the provided input, example but must not be same: eaning usually clear despite some inappropriate choices]',
+                    "Paraphrase?": '[please this by your judgment based on the provided input, example but must not be same: Generally successful]',
+                    "Score": '[give it based on the above points, must be round number]',
                 },
                 "grammatical_range_and_accuracy": {
                     "Speak in complex sentences?": '[please this by your judgment based on the provided input, example but must not be same: Complex sentences had inaccuracies but the meaning was usually still clear.]',
-                    "Use a variety of grammatical forms?" : '[please this by your judgment based on the provided input, example but must not be same: Good variety, but verb forms need care. ]',
-                    "Avoid grammatical mistakes?" : '[please this by your judgment based on the provided input, example but must not be same: Some self-corrections]',
-                    "Score" : '[give it based on the above points, must be round number]',
+                    "Use a variety of grammatical forms?": '[please this by your judgment based on the provided input, example but must not be same: Good variety, but verb forms need care. ]',
+                    "Avoid grammatical mistakes?": '[please this by your judgment based on the provided input, example but must not be same: Some self-corrections]',
+                    "Score": '[give it based on the above points, must be round number]',
                 },
                 "pronunciation": {
                     "Pronounce words accurately?": '[please this by your judgment based on the provided input, example but must not be same: Generally easy to understand]',
-                    "Join sounds together?" : '[please this by your judgment based on the provided input, example but must not be same: Developing a smoother flow of sounds would improve pronunciation overall.]',
-                    "Vary intonation?" : '[please this by your judgment based on the provided input, example but must not be same: Used appropriate intonation.]',
-                    "Score" : '[give it based on the above points, must be round number]',
+                    "Join sounds together?": '[please this by your judgment based on the provided input, example but must not be same: Developing a smoother flow of sounds would improve pronunciation overall.]',
+                    "Vary intonation?": '[please this by your judgment based on the provided input, example but must not be same: Used appropriate intonation.]',
+                    "Score": '[give it based on the above points, must be round number]',
                 },
                 "general_feedback": {
                     "comments": '[please this by your judgment based on the provided input, example but must not be same: You engaged well in our conversation during the interview and clearly demonstrated your skills in English. You might consider joining Toastmasters to further develop your confidence and public speaking skills in English. Best wishes for the future.]',
                     "average_score": '[please fill this by the average of each aspects score]',
                 }
-                
+
             };
 
-            const command = "Please check the aspect of fluency and coherence, lexical resource, grammatical range and accuracy, pronunciation from 0 - 1 based on below context " + "\n" + JSON.stringify(assessmentAspect) + "\n" + "The output must be exactly similar like below " + "\n" +  JSON.stringify(assessmentFormat);
- 
-            // TODO: Change the command prompt
-            // const command = "Please check the aspects of fluency and coherence, lexical resource, grammatical range and accuracy, pronountiation simillar like IELTS speaking test then only give it score on each of them using percentaged and point out the wrong or error point in the text. It must returns an json contains 4 object which are an object with key scores it contains score each of four aspects in number and an object with key correct_text it contains only the correct version of the user words with no explanation about the aspects exactly format without change anything { scores: { fluency_coherence: number, lexical_resource: number, grammatical_range_accuracy: number, pronunciation: number }, correct_text: string }";
+            const command = "Please check the aspect of fluency and coherence, lexical resource, grammatical range and accuracy, pronunciation from 0 - 1 based on below context " + "\n" + JSON.stringify(assessmentAspect) + "\n" + "The output must be only exactly similar like below " + "\n" + JSON.stringify(assessmentFormat);
 
 
             // DEV-Mode
@@ -239,12 +234,25 @@ export default function index() {
                 try {
                     console.log("attempt :", i);
                     const completion = await openai.chat.completions.create({
-                        messages: [{ role: "user", content: text + command }],
+                        messages: [
+                            {
+                                role: "user",
+                                content: text
+                            },
+                            {
+                                role: "assistant",
+                                content: command
+                            },
+                        ],
                         model: 'gpt-3.5-turbo-0125',
+                        max_tokens: 4000
                     });
                     console.log(completion.choices[0].message.content);
                     const result = JSON.parse(completion.choices[0].message.content ?? "")
-                    console.log(result);
+                    console.log(result["fluency_and_coherence"]);
+                    if (result["fluency_and_coherence"]["Score"] === "" || result["lexical_resource"]["Score"] === "" || result["grammatical_range_and_accuracy"]["Score"] === "" || result["pronunciation"]["Score"] === "" || result["general_feedback"]["average_score"] === "") {
+                        throw new Error("result is not valid");
+                    }
                     setResult(result);
                     setIsResultReady(true)
                     return true;
@@ -460,22 +468,22 @@ export default function index() {
                             <img src="./speaking-english.jpg" className="w-[400px]" alt="" />
                             <p className="text-blue-500 text-2xl mt-10">Start Speaking Test</p>
                         </button>
-                            <div className="mt-10 text-gray-800">
-                                <label htmlFor="username" className="text-lg mr-5">Your Name</label>
-                                <input
-                                    type="text"
-                                    id="username"
-                                    name="username"
-                                    className="border border-gray-300 rounded-md px-3 py-2 mt-2"
-                                    value={userName}
-                                    onChange={(e) => setUserName(e.target.value)}
-                                />
+                        <div className="mt-10 text-gray-800">
+                            <label htmlFor="username" className="text-lg mr-5">Your Name</label>
+                            <input
+                                type="text"
+                                id="username"
+                                name="username"
+                                className="border border-gray-300 rounded-md px-3 py-2 mt-2"
+                                value={userName}
+                                onChange={(e) => setUserName(e.target.value)}
+                            />
                         </div>
                     </div>
                 )
             }
 
-<Rodal
+            <Rodal
                 animation="zoom"
                 visible={showResultModal}
                 width={1424 * 0.5}
@@ -511,7 +519,7 @@ export default function index() {
                                                     {/* <CircularProgress
                                                         value={result?.scores.fluency_and_coherence.Score ?? 0}
                                                     /> */}
-                                                    <p>{result?.scores.fluency_and_coherence.Score ?? 0}</p>
+                                                    <p>{result?.fluency_and_coherence.Score ?? 0}</p>
                                                 </div>
                                             </td>
                                         </tr>
