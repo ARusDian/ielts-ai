@@ -2,7 +2,7 @@ import Link from "next/link";
 import React, { useEffect, useState, useRef } from "react";
 import OpenAI from 'openai';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import { CreateChatCompletionRequestMessage } from "openai/resources/chat";
+import { ChatCompletionMessageParam } from "openai/resources/chat";
 import ReactLoading from 'react-loading';
 import Rodal from 'rodal';
 
@@ -35,7 +35,7 @@ export default function index() {
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-    const [chatLogs, setChatLogs] = useState<CreateChatCompletionRequestMessage[]>([]);
+    const [chatLogs, setChatLogs] = useState<ChatCompletionMessageParam[]>([]);
 
     const [isStart, setIsStart] = useState<boolean>(false);
 
@@ -264,11 +264,11 @@ export default function index() {
             role: "assistant", content: transcript !== "" ?
                 `generate one question without quotes marks according to to response statement : ${transcript}` :
                 "generate one question that commonly used in IELTS without quotes marks"
-        } as CreateChatCompletionRequestMessage 
+        } as ChatCompletionMessageParam 
 
         const completion = await openai.chat.completions.create({
             messages: [...chatLogs, prompt],
-            model: 'gpt-3.5-turbo',
+            model: 'gpt-3.5-turbo-0125',
         });
 
         const newQuestion = completion.choices[0].message.content;
