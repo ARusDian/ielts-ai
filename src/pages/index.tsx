@@ -115,6 +115,7 @@ export default function index() {
         }
     }, [isStart]);
     useEffect(() => {
+        console.log(transcript)
         if (!listening && chatLogs.length > 0) {
             generateQuestion();
         }
@@ -123,6 +124,7 @@ export default function index() {
     useEffect(() => {
 
         const getResult = async () => {
+            setIsResultReady(false);
             const maxAttempt = 10;
             console.log("getting Result...")
             let isDone = false;
@@ -226,12 +228,47 @@ export default function index() {
 
 
             // DEV-Mode
-            const text = "Last weekend, me and my best buddy, we goes on a road trip. We drives for hours, and it was so much fun! We sees all kinds of interesting places, like a big, old castle on top of a hill. It was really cool, and we takes a selfie there. Then, we goes to this little town with a huge ice cream shop. They has like a hundred flavors, and I eats a big, chocolate sundae. It was delicious!\nMy sister, she don't likes to wake up early in the morning. She stays up late watching TV and then sleeps in until noon. She says it's the best way to get enough rest. But, sometimes, she misses important meetings and classes. I tells her to set an alarm, but she never listens. It's like she wants to be late all the time!\nAt my job, we has a big office party every year. Last year, we goes to a fancy restaurant. They serves the most delicious food, like lobster and caviar. I tries them for the first time, and it was interesting. But, the best part was the dancing. We dances all night long, and I have so much fun. I can't wait for this year's party!\nWhen I was a kid, I don't likes vegetables. My mom always tries to make me eats them, but I don't listens. I hides them under the table or gives them to the dog. Now, I realizes that vegetables are good for you, and I eats them every day. I wish I had listened to my mom when I was younger.\nMe and my friends, we goes camping every summer. We brings tents, sleeping bags, and lots of marshmallows for roasting. Last year, we goes to a remote forest. It was so quiet, and we hears the sounds of nature all around us. We tells scary stories by the campfire and laughs until late at night. It's the best way to spend the summer!\n"
+            // const text = "Last weekend, me and my best buddy, we goes on a road trip. We drives for hours, and it was so much fun! We sees all kinds of interesting places, like a big, old castle on top of a hill. It was really cool, and we takes a selfie there. Then, we goes to this little town with a huge ice cream shop. They has like a hundred flavors, and I eats a big, chocolate sundae. It was delicious!\nMy sister, she don't likes to wake up early in the morning. She stays up late watching TV and then sleeps in until noon. She says it's the best way to get enough rest. But, sometimes, she misses important meetings and classes. I tells her to set an alarm, but she never listens. It's like she wants to be late all the time!\nAt my job, we has a big office party every year. Last year, we goes to a fancy restaurant. They serves the most delicious food, like lobster and caviar. I tries them for the first time, and it was interesting. But, the best part was the dancing. We dances all night long, and I have so much fun. I can't wait for this year's party!\nWhen I was a kid, I don't likes vegetables. My mom always tries to make me eats them, but I don't listens. I hides them under the table or gives them to the dog. Now, I realizes that vegetables are good for you, and I eats them every day. I wish I had listened to my mom when I was younger.\nMe and my friends, we goes camping every summer. We brings tents, sleeping bags, and lots of marshmallows for roasting. Last year, we goes to a remote forest. It was so quiet, and we hears the sounds of nature all around us. We tells scary stories by the campfire and laughs until late at night. It's the best way to spend the summer!\n"
 
-            // const text = chatLogs.filter(chat => chat.role === "user").join("\n")
+            const text = chatLogs.filter(chat => chat.role === "user").join("\n")
 
             for (let i = 0; i < maxAttempt; i++) {
                 try {
+                    // if (text.length < 1000) {
+                    //     const result = {
+                    //         fluency_and_coherence: {
+                    //             "avoid silence or hesitation?": "0",
+                    //             "Speak at length on each topic?": "0",
+                    //             "Use words to connect ideas?": "0",
+                    //             "Score": "0",
+                    //         },
+                    //         lexical_resource: {
+                    //             "Use a wide range of vocabulary?": "0",
+                    //             "Use idioms and collocation?": "0",
+                    //             "Paraphrase?": "0",
+                    //             "Score": "0",
+                    //         },
+                    //         grammatical_range_and_accuracy: {
+                    //             "Speak in complex sentences?": "0",
+                    //             "Use a variety of grammatical forms?": "0",
+                    //             "Avoid grammatical mistakes?": "0",
+                    //             "Score": "0",
+                    //         },
+                    //         pronunciation: {
+                    //             "Pronounce words accurately?": "0",
+                    //             "Join sounds together?": "0",
+                    //             "Vary intonation?": "0",
+                    //             "Score": "0",
+                    //         },
+                    //         general_feedback: {
+                    //             "comments": "0",
+                    //             "average_score": "0",
+                    //         }
+                    //     }
+                    //     setResult(result);
+                    //     setIsResultReady(true)
+                    //     return true;
+                    // }
                     console.log("attempt :", i);
                     const completion = await openai.chat.completions.create({
                         messages: [
@@ -248,8 +285,8 @@ export default function index() {
                         max_tokens: 4000
                     });
                     console.log(completion.choices[0].message.content);
+
                     const result = JSON.parse(completion.choices[0].message.content ?? "")
-                    console.log(result["fluency_and_coherence"]);
                     if (result["fluency_and_coherence"]["Score"] === "" || result["lexical_resource"]["Score"] === "" || result["grammatical_range_and_accuracy"]["Score"] === "" || result["pronunciation"]["Score"] === "" || result["general_feedback"]["average_score"] === "") {
                         throw new Error("result is not valid");
                     }
@@ -533,6 +570,7 @@ export default function index() {
                                                     {/* <CircularProgress
                                                         value={result?.scores.lexical_resource.Score ?? 0}
                                                     /> */}
+                                                    <p>{result?.lexical_resource.Score ?? 0}</p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -546,7 +584,7 @@ export default function index() {
                                                     {/* <CircularProgress
                                                         value={result?.scores.grammatical_range_and_accuracy.Score ?? 0}
                                                     /> */}
-
+                                                    <p>{result?.grammatical_range_and_accuracy.Score ?? 0}</p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -560,6 +598,7 @@ export default function index() {
                                                     {/* <CircularProgress
                                                         value={result?.scores.pronunciation.Score ?? 0}
                                                     /> */}
+                                                    <p>{result?.pronunciation.Score ?? 0}</p>
                                                 </div>
                                             </td>
                                         </tr>
