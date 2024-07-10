@@ -14,24 +14,32 @@ export default function handler(
         await authenticateImplicitWithAdc().then(async () => {
             const client = new textToSpeech.TextToSpeechClient();
 
-            const { text, audio, user } = req.body;
-            
-            
+            const { text, audio, user, chatLogs, answer, isInit } = req.body;   
+                        
             // safe base64 wav file to disk
             const base64Data = audio.replace(/^data:audio\/wav;base64,/, '');
             const currentDate = new Date().getTime()
 
-            if (!fs.existsSync('public/audio/Input')) {
-                fs.mkdirSync('public/audio/Input');
+            if (!fs.existsSync('public/audio/records/')) {
+                fs.mkdirSync('public/audio/records/');
             }
 
-            const path = 'public/audio/Input/' + user + '/';
-            const fileName = user + currentDate + '.wav'
-
+            const path = 'public/audio/records/' + user + '/';
             if (!fs.existsSync(path)) {
                 fs.mkdirSync(path);
             }
-            fs.writeFileSync(path + fileName, base64Data, 'base64');
+
+            if (!fs.existsSync(path + "user/")) {
+                fs.mkdirSync(path + "user/");
+            }
+            if (!isInit) {
+                const fileName = "user/" + currentDate + '.wav'
+                console.log("User audio path", path + fileName)
+                fs.writeFileSync(path + fileName, base64Data, 'base64');
+            }
+            // write chat logs to file txt
+            const chatLogsPath = path + "chatLogs" + '.txt'
+            fs.writeFileSync(chatLogsPath, JSON.stringify([...chatLogs, { role: "user", content: answer }, { role: "assistant", content: text }], null, 2));
 
             const writeFile = util.promisify(fs.writeFile);
 
@@ -48,15 +56,15 @@ export default function handler(
                 },
             };
             const [response] = await client.synthesizeSpeech(request);
-            const dir = 'public/audio/outputSynthesizeFile'
+            const dir = path + 'assistant/';
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir);
             }
-            await writeFile(dir + '/outputFile' + currentDate + '.mp3', response.audioContent, 'binary');
-            console.log(`Audio content written to file: ${'public/audio/outputFile'}`);
+            await writeFile(dir  + currentDate + '.mp3', response.audioContent, 'binary');
+            console.log(`Audio content written to file: ${dir + currentDate + '.mp3'}`);
             res.status(200).json({
                 ...response,
-                src: 'audio/outputSynthesizeFile/outputFile' + currentDate + '.mp3'
+                src: dir.replace("public/", "") + currentDate + '.mp3'
             })
         });
     }
