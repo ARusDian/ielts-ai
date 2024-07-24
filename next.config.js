@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "export",
   reactStrictMode: true,
   env: {
     GCP_PRIVATE_KEY: process.env.GCP_PRIVATE_KEY,
