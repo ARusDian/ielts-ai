@@ -34,3 +34,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 pnpm-lock.yaml
+ca.crt
+ca.key
+cert.crt
+cert.key
+
+certificates

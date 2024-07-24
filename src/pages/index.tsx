@@ -53,7 +53,12 @@ type ResultData = {
 
 export default function index() {
 
+    const TIME = 60;
+
     const { startRecording, stopRecording, base64 } = useRecordVoice();
+    const [timePerQuestion, setTimePerQuestion] = useState<number>(TIME);
+
+    
 
 
     const openai = new OpenAI({
@@ -70,61 +75,45 @@ export default function index() {
     } = useSpeechRecognition();
 
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-
-    const [chatLogs, setChatLogs] = useState<ChatCompletionMessageParam[]>([
-        {
-            "role": "assistant",
-            "content": "How do you think technology has changed people's social interactions in recent years?"
-        },
-        {
-            "role": "user",
-            "content": "I don't know."
-        },
-        {
-            "role": "assistant",
-            "content": "In what ways do you think technology has influenced the way people communicate and connect with each other in today's society?"
-        },
-        {
-            "role": "user",
-            "content": "maybe i think it's good uh in some aspect uh"
-        },
-        {
-            "role": "assistant",
-            "content": "In what ways do you believe technology has positively impacted social interactions and relationships in some aspects?"
-        },
-        {
-            "role": "user",
-            "content": "Uh, I don't think so. Because, uh, many. Many factor to. i don't believe"
-        },
-        {
-            "role": "assistant",
-            "content": "How do you think technology has impacted social interactions and relationships considering the various factors at play?"
-        },
-        {
-            "role": "user",
-            "content": "it's good good good i like"
-        },
-        {
-            "role": "assistant",
-            "content": "How do you feel about the impact of technology on social interactions and relationships?"
-        },
-        {
-            "role": "user",
-            "content": "i feel so very comfortable to interact with them"
-        },
-        {
-            "role": "assistant",
-            "content": "What aspects of interacting with others make you feel most comfortable and at ease?"
-        },
-        {
-            "role": "user",
-            "content": "uh the runaway the building the facility and at"
-        },
-        {
-            "role": "assistant",
-            "content": "What kinds of activities or spaces do you feel particularly drawn to or find appealing?"
-        }
-    ]);
+    const [chatLogs, setChatLogs] = useState<ChatCompletionMessageParam[]>([])
+    // const [chatLogs, setChatLogs] = useState<ChatCompletionMessageParam[]>([
+    //     {
+    //         "role": "assistant",
+    //         "content": "Compare and contrast the advantages and disadvantages of living in the city versus living in the countryside."
+    //     },
+    //     {
+    //         "role": "user",
+    //         "content": "Advantages and disadvantages of living in the city versus living in the countryside. Well, living in the countryside is more convenient for me and comfortable, while living in this city needs lots of money. How we doing? yeah"
+    //     },
+    //     {
+    //         "role": "assistant",
+    //         "content": "Is the disparity in cost of living between the city and countryside a major factor influencing your preference for living in the countryside?"
+    //     },
+    //     {
+    //         "role": "user",
+    //         "content": "Yes, actually it is The disparity or the difference, the deviation between the cost of living in the city and countryside makes me realizing that. I need to save a lot of money for future necessity. Then I choose to live in a countryside or rural area."
+    //     },
+    //     {
+    //         "role": "assistant",
+    //         "content": "What specific financial considerations led you to opt for living in the countryside over the city?"
+    //     },
+    //     {
+    //         "role": "user",
+    //         "content": "The financial consideration that makes me deciding to live in the countryside is that the cause of accommodations as well as the groceries and also the the public facilities that cost me less than living in a city."
+    //     },
+    //     {
+    //         "role": "assistant",
+    //         "content": "What aspects of the cost of living, such as accommodations, groceries, and public facilities, are significantly lower in the countryside compared to the city, influencing your decision to live in a rural area?"
+    //     },
+    //     {
+    //         "role": "user",
+    //         "content": "Because I think, uh, when you are asking about the aspects of living in the city and rural areas, it means that the price of accommodation, for example, rental prices are higher in city than in countryside. So however, if you wanted to save more money, I think you need to choose to live in a country. Side because we also can save money for groceries as well. For example maybe here the in the countryside the eggs or any other types of groceries, butter and everything. Maybe because you like less than $10.00 but when you buy all of those grocery stuff in city you probably cost. Yourself about more than $25."
+    //     },
+    //     {
+    //         "role": "assistant",
+    //         "content": "What are some specific examples of the price differences in groceries and accommodations between living in the city and in the countryside that have influenced your decision to live in a rural area?"
+    //     }
+    // ]);
 
     console.log(chatLogs);
     
@@ -283,13 +272,22 @@ export default function index() {
 
             };
 
-            const command = "Please check the aspect of fluency and coherence, lexical resource, grammatical range and accuracy, pronunciation from 0 - 1 based on below context " + "\n" + JSON.stringify(assessmentAspect) + "\n" + "The output must be only exactly similar like below and the total value must be not more than 6" + "\n" + JSON.stringify(assessmentFormat) ;
 
 
             // DEV-Mode
             // const text = "Last weekend, me and my best buddy, we goes on a road trip. We drives for hours, and it was so much fun! We sees all kinds of interesting places, like a big, old castle on top of a hill. It was really cool, and we takes a selfie there. Then, we goes to this little town with a huge ice cream shop. They has like a hundred flavors, and I eats a big, chocolate sundae. It was delicious!\nMy sister, she don't likes to wake up early in the morning. She stays up late watching TV and then sleeps in until noon. She says it's the best way to get enough rest. But, sometimes, she misses important meetings and classes. I tells her to set an alarm, but she never listens. It's like she wants to be late all the time!\nAt my job, we has a big office party every year. Last year, we goes to a fancy restaurant. They serves the most delicious food, like lobster and caviar. I tries them for the first time, and it was interesting. But, the best part was the dancing. We dances all night long, and I have so much fun. I can't wait for this year's party!\nWhen I was a kid, I don't likes vegetables. My mom always tries to make me eats them, but I don't listens. I hides them under the table or gives them to the dog. Now, I realizes that vegetables are good for you, and I eats them every day. I wish I had listened to my mom when I was younger.\nMe and my friends, we goes camping every summer. We brings tents, sleeping bags, and lots of marshmallows for roasting. Last year, we goes to a remote forest. It was so quiet, and we hears the sounds of nature all around us. We tells scary stories by the campfire and laughs until late at night. It's the best way to spend the summer!\n"
+            let arrtext = chatLogs.filter(chat => chat.role === "user")
+            arrtext.pop();
+            arrtext.pop();
+
             
-            const text = chatLogs.filter(chat => chat.role === "user").map(chat => chat.content).join("\n");
+
+            const text = arrtext.map(chat => chat.content).join(" ");
+
+
+            // const text = chatLogs.filter(chat => chat.role === "user").map(chat => chat.content).join(" ");
+            const command = "Please check the aspect of fluency and coherence, lexical resource, grammatical range and accuracy, pronunciation from 0 - 9 based on below context " + "\n" + JSON.stringify(assessmentAspect) + "\n" + "The output must be only exactly similar like below and the total value force to be not more than 8 maximum 9 if the user give long text :" + "\n" + JSON.stringify(assessmentFormat);
+
             console.log("text :", text);
             for (let i = 0; i < maxAttempt; i++) {
                 try {
@@ -422,6 +420,9 @@ export default function index() {
                 isStart ? (
                     <>
                         <section className="w-[100%] max-w-[1300px] h-[90%] mx-auto flex justify-center items-center flex-col relative rounded-3xl shadow-2xl shadow-sky-400/50">
+                            
+                            
+
                             <div className="w-[100%] h-[100%] p-5 overflow-y-scroll flex flex-col gap-3" style={{ scrollbarWidth: "none", }} ref={scrollContainerRef}>
                                 {chatLogs.map((chat, index) => (
                                     <div key={index} className="flex">
@@ -496,6 +497,7 @@ export default function index() {
 
                                 <button
                                     type="button"
+                                    disabled={listening}
                                     className="flex flex-col justify-center items-center text-white bg-blue-500 hover:bg-blue-600 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm w-[100px] p-3"
                                     onClick={() => {
                                         startRecording();
