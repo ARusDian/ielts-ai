@@ -3,8 +3,18 @@ const textToSpeech = require('@google-cloud/text-to-speech');
 const { Storage } = require('@google-cloud/storage');
 const fs = require('fs');
 const util = require('util');
-
 const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
+
+export const config = {
+    api: {
+        responseLimit: false,
+        bodyParser: {
+            sizeLimit: '100mb',
+        },
+    },
+    // Specifies the maximum allowed duration for this function to execute (in seconds)
+    maxDuration: 20,
+}
 
 export default function handler(
     req: NextApiRequest,
