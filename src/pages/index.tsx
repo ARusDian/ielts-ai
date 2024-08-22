@@ -1,5 +1,5 @@
 import Link from "next/link";
-import React, { useEffect, useState, useRef, use } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import OpenAI from 'openai';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { ChatCompletionMessageParam } from "openai/resources/chat";
@@ -369,7 +369,7 @@ export default function index() {
                                                 className="bg-blue-400 px-6 py-5 text-lg text-white"
                                                 style={{ borderRadius: "50px", borderTopLeftRadius: 0, marginBottom: "5px" }}
                                             >
-                                                <p>{chat.content}</p>
+                                                <p>{String(chat.content ?? "")}</p>
                                             </div>
                                         ) : (
                                             <div
