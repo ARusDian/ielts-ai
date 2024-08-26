@@ -7,6 +7,8 @@ const nextConfig = {
     GCP_PROJECT_ID: process.env.GCP_PROJECT_ID,
     GCP_SERVICE_ACCOUNT_EMAIL: process.env.GCP_SERVICE_ACCOUNT_EMAIL,
   },
+  output: "export",
+  trailingSlash: true,
 }
 
 module.exports = nextConfig
