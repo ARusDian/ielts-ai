@@ -5,9 +5,8 @@ import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognitio
 import { ChatCompletionMessageParam } from "openai/resources/chat";
 import ReactLoading from 'react-loading';
 import Rodal from 'rodal';
-
-import { CircularProgressbar } from 'react-circular-progressbar';
-import 'react-circular-progressbar/dist/styles.css';
+import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css'
 
 import CircularProgress from "@/components/CircularProgress";
 
@@ -19,35 +18,12 @@ import 'rodal/lib/rodal.css';
 import router from "next/router";
 import { useRecordVoice } from "@/hooks/useRecordVoice";
 
-type ResultData = {
-    fluency_and_coherence: {
-        "avoid silence or hesitation?": string,
-        "Speak at length on each topic?": string,
-        "Use words to connect ideas?": string,
-        "Score": string,
-    },
-    lexical_resource: {
-        "Use a wide range of vocabulary?": string,
-        "Use idioms and collocation?": string,
-        "Paraphrase?": string,
-        "Score": string,
-    },
-    grammatical_range_and_accuracy: {
-        "Speak in complex sentences?": string,
-        "Use a variety of grammatical forms?": string,
-        "Avoid grammatical mistakes?": string,
-        "Score": string,
-    },
-    pronunciation: {
-        "Pronounce words accurately?": string,
-        "Join sounds together?": string,
-        "Vary intonation?": string,
-        "Score": string,
-    },
-    general_feedback: {
-        "comments": string,
-        "average_score": string,
-    },
+interface ResultModel {
+    fluency_and_coherence: number;
+    lexical_resource: number;
+    grammar: number;
+    pronunciation: number;
+    ielts_score: number;
 }
 
 
@@ -175,7 +151,7 @@ export default function index() {
     const [showResultModal, setShowResultModal] = useState<boolean>(false);
     const [isResultReady, setIsResultReady] = useState<boolean>(false);
 
-    const [result, setResult] = useState<ResultData | null>();
+    const [result, setResult] = useState<ResultModel | null>();
 
 
     const [errorResult, setErrorResult] = useState<{
@@ -249,45 +225,27 @@ export default function index() {
             const maxAttempt = 10;
             console.log("getting Result...")
             let isDone = false;
-
-            // DEV-Mode
-            // const text = "Last weekend, me and my best buddy, we goes on a road trip. We drives for hours, and it was so much fun! We sees all kinds of interesting places, like a big, old castle on top of a hill. It was really cool, and we takes a selfie there. Then, we goes to this little town with a huge ice cream shop. They has like a hundred flavors, and I eats a big, chocolate sundae. It was delicious!\nMy sister, she don't likes to wake up early in the morning. She stays up late watching TV and then sleeps in until noon. She says it's the best way to get enough rest. But, sometimes, she misses important meetings and classes. I tells her to set an alarm, but she never listens. It's like she wants to be late all the time!\nAt my job, we has a big office party every year. Last year, we goes to a fancy restaurant. They serves the most delicious food, like lobster and caviar. I tries them for the first time, and it was interesting. But, the best part was the dancing. We dances all night long, and I have so much fun. I can't wait for this year's party!\nWhen I was a kid, I don't likes vegetables. My mom always tries to make me eats them, but I don't listens. I hides them under the table or gives them to the dog. Now, I realizes that vegetables are good for you, and I eats them every day. I wish I had listened to my mom when I was younger.\nMe and my friends, we goes camping every summer. We brings tents, sleeping bags, and lots of marshmallows for roasting. Last year, we goes to a remote forest. It was so quiet, and we hears the sounds of nature all around us. We tells scary stories by the campfire and laughs until late at night. It's the best way to spend the summer!\n"
-            let arrtext = chatLogs.filter(chat => chat.role === "user")
-            arrtext.pop();
-            arrtext.pop();
-
-            const text = arrtext.map(chat => chat.content).join(" ");
-
-            // const text = chatLogs.filter(chat => chat.role === "user").map(chat => chat.content).join(" ");
-            const command = "Please check the aspect of fluency and coherence, lexical resource, grammatical range and accuracy, pronunciation from 0 - 9 based on below context " + "\n" + JSON.stringify(assessmentAspect) + "\n" + "The output must be only exactly similar like below and the total value force to be not more than 8 maximum 9 if the user give long text :" + "\n" + JSON.stringify(assessmentFormat);
-
-            console.log("text :", text);
             for (let i = 0; i < maxAttempt; i++) {
                 try {
-                    console.log("attempt :", i);
-                    const completion = await openai.chat.completions.create({
-                        messages: [
-                            {
-                                role: "user",
-                                content: text
-                            },
-                            {
-                                role: "assistant",
-                                content: command
-                            },
-                        ],
-                        model: 'gpt-3.5-turbo-0125',
-                        max_tokens: 4000
-                    });
-                    console.log(completion.choices[0].message.content);
-
-                    const result = JSON.parse(completion.choices[0].message.content ?? "")
-                    if (result["fluency_and_coherence"]["Score"] === "" || result["lexical_resource"]["Score"] === "" || result["grammatical_range_and_accuracy"]["Score"] === "" || result["pronunciation"]["Score"] === "" || result["general_feedback"]["average_score"] === "") {
-                        throw new Error("result is not valid");
+                    fetch("/api/result", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            user: userName,
+                        }),
+                    }).then((res) => res.json()).then(
+                        (data) => {
+                            console.log("data :", data);
+                            setResult(data);
+                            setIsResultReady(true);
+                            isDone = true;
+                        }
+                    );
+                    if (isDone) {
+                        break;
                     }
-                    setResult(result);
-                    setIsResultReady(true)
-                    return true;
                 } catch (err: unknown) {
                     console.log("Error :", err);
                     console.log("retrying :", i);
@@ -452,14 +410,14 @@ export default function index() {
                             </div>
 
                             <div className="flex-1 flex justify-end">
-                                {/* <button
+                                <button
                                     type="button"
                                     className="flex flex-col justify-center items-center text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm p-5 mb-2 w-[100px]"
                                     onClick={() => setShowResultModal(true)}
                                 >
                                     <svg viewBox="0 0 512 512" width="50px" height="50px" version="1.1" xmlns="http://www.w3.org/2000/svg" fill="#ffffff"><g id="SVGRepo_bgCarrier" strokeWidth="0"></g><g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round"></g><g id="SVGRepo_iconCarrier"> <title>report-barchart</title> <g id="Page-1" stroke="none" strokeWidth="1" fill="none" fillRule="evenodd"> <g id="add" fill="#ffffff" transform="translate(42.666667, 85.333333)"> <path d="M341.333333,1.42108547e-14 L426.666667,85.3333333 L426.666667,341.333333 L3.55271368e-14,341.333333 L3.55271368e-14,1.42108547e-14 L341.333333,1.42108547e-14 Z M330.666667,42.6666667 L42.6666667,42.6666667 L42.6666667,298.666667 L384,298.666667 L384,96 L330.666667,42.6666667 Z M106.666667,85.3333333 L106.666,234.666 L341.333333,234.666667 L341.333333,256 L85.3333333,256 L85.3333333,85.3333333 L106.666667,85.3333333 Z M170.666667,149.333333 L170.666667,213.333333 L128,213.333333 L128,149.333333 L170.666667,149.333333 Z M234.666667,106.666667 L234.666667,213.333333 L192,213.333333 L192,106.666667 L234.666667,106.666667 Z M298.666667,170.666667 L298.666667,213.333333 L256,213.333333 L256,170.666667 L298.666667,170.666667 Z" id="Combined-Shape"> </path> </g> </g> </g></svg>
                                     Get the Result
-                                </button> */}
+                                </button>
                             </div>
                         </section>
 
@@ -541,70 +499,99 @@ export default function index() {
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="bg-white divide-y divide-gray-300  text-gray-600">
-                                        <tr>
-                                            <td className="px-6 py-4 whitespace-nowrap">
+                                    <tbody className="bg-white divide-y divide-gray-200 text-gray-700">
+                                        <tr className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-left font-medium text-gray-800">
                                                 Fluency and Coherence
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div style={{ width: 100, height: 100 }}>
-                                                    {/* <CircularProgress
-                                                        value={result?.scores.fluency_and_coherence.Score ?? 0}
-                                                    /> */}
-                                                    <p>{result?.fluency_and_coherence.Score ?? 0}</p>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <div className="flex justify-end items-center">
+                                                    <div className="mr-4 text-sm text-gray-600">
+                                                        {result?.fluency_and_coherence ?? 0}%
+                                                    </div>
+                                                    <div style={{ width: 60, height: 60 }}>
+                                                        <CircularProgressbar
+                                                            value={result?.fluency_and_coherence ?? 0}
+                                                            styles={buildStyles({
+                                                                pathColor: `#3b82f6`,
+                                                                textColor: '#3b82f6',
+                                                            })}
+                                                        />
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
-                                        <tr>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                Lexical Resource;
+                                        <tr className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-left font-medium text-gray-800">
+                                                Lexical Resource
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-
-                                                <div style={{ width: 100, height: 100 }}>
-                                                    {/* <CircularProgress
-                                                        value={result?.scores.lexical_resource.Score ?? 0}
-                                                    /> */}
-                                                    <p>{result?.lexical_resource.Score ?? 0}</p>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <div className="flex justify-end items-center">
+                                                    <div className="mr-4 text-sm text-gray-600">
+                                                        {result?.lexical_resource ?? 0}%
+                                                    </div>
+                                                    <div style={{ width: 60, height: 60 }}>
+                                                        <CircularProgressbar
+                                                            value={result?.lexical_resource ?? 0}
+                                                            styles={buildStyles({
+                                                                pathColor: `#10b981`,
+                                                                textColor: '#10b981',
+                                                            })}
+                                                        />
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
-                                        <tr>
-                                            <td className="px-6 py-4 whitespace-nowrap">
+                                        <tr className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-left font-medium text-gray-800">
                                                 Grammatical Range and Accuracy
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-
-                                                <div style={{ width: 100, height: 100 }}>
-                                                    {/* <CircularProgress
-                                                        value={result?.scores.grammatical_range_and_accuracy.Score ?? 0}
-                                                    /> */}
-                                                    <p>{result?.grammatical_range_and_accuracy.Score ?? 0}</p>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <div className="flex justify-end items-center">
+                                                    <div className="mr-4 text-sm text-gray-600">
+                                                        {result?.grammar ?? 0}%
+                                                    </div>
+                                                    <div style={{ width: 60, height: 60 }}>
+                                                        <CircularProgressbar
+                                                            value={result?.grammar ?? 0}
+                                                            styles={buildStyles({
+                                                                pathColor: `#ef4444`,
+                                                                textColor: '#ef4444',
+                                                            })}
+                                                        />
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
-                                        <tr>
-                                            <td className="px-6 py-4 whitespace-nowrap">
+                                        <tr className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-left font-medium text-gray-800">
                                                 Pronunciation
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-
-                                                <div style={{ width: 100, height: 100 }}>
-                                                    {/* <CircularProgress
-                                                        value={result?.scores.pronunciation.Score ?? 0}
-                                                    /> */}
-                                                    <p>{result?.pronunciation.Score ?? 0}</p>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <div className="flex justify-end items-center">
+                                                    <div className="mr-4 text-sm text-gray-600">
+                                                        {result?.pronunciation ?? 0}%
+                                                    </div>
+                                                    <div style={{ width: 60, height: 60 }}>
+                                                        <CircularProgressbar
+                                                            value={result?.pronunciation ?? 0}
+                                                            styles={buildStyles({
+                                                                pathColor: `#f59e0b`,
+                                                                textColor: '#f59e0b',
+                                                            })}
+                                                        />
+                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
-                                        {/* <tr>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        Correct Text
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {result?.correct_text}
-                                    </td>
-                                </tr> */}
+                                        <tr className="hover:bg-gray-50 bg-gray-100">
+                                            <td className="px-6 py-4 whitespace-nowrap text-left font-semibold text-gray-900">
+                                                Final IELTS Score
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-lg font-bold text-blue-600">
+                                                {result?.ielts_score ?? 0}
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
 

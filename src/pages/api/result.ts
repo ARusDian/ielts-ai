@@ -24,19 +24,21 @@ export const config = {
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const user = "susan2_250724-1721886125576";
-    const ori_user = req.body.user;
+    const user = req.body.user;
     
-    console.log("user: ", user, "ori_user: ", ori_user);
-
     const scriptPath = "src\\child_processes\\evaluation.py";
-    const pythonPath = process.env.NEXT_PUBLIC_PYTHON_PATH
+    const pythonPath = process.env.NEXT_PUBLIC_PYTHON_PATH;
     const command = `${pythonPath} ${scriptPath} --user ${user}`;
 
     let result = [];
     try {
         const stdout = execSync(command, { encoding: 'utf-8' });
         result = JSON.parse(stdout.trim());
+        for (const key in result) {
+            if (typeof result[key] === 'number') {
+                result[key] = Number(result[key].toFixed(2));
+            }
+        }
         console.log("result: ", result);
     } catch (error: unknown) {
         console.error(`Error executing command: ${error}`);
