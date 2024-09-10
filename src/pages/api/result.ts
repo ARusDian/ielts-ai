@@ -36,8 +36,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return;
     }
 
-    // Resolve the script path using path.join and __dirname
-    const scriptPath = path.join(__dirname, '..', '..', 'src', 'child_processes', 'evaluation.py');
+    // Resolve the script path using process.cwd()
+    const scriptPath = path.join(process.cwd(), 'src', 'child_processes', 'evaluation.py');
     const command = `${pythonPath} ${scriptPath} --user ${user}`;
 
     let result = [];

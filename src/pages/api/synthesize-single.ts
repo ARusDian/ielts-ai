@@ -22,7 +22,8 @@ export default function handler(
     res: NextApiResponse
 ) {
     const TTS = async () => {
-        await authenticateImplicitWithAdc().then(async () => {
+        try {
+            await authenticateImplicitWithAdc();
             const client = new textToSpeech.TextToSpeechClient();
 
             const { text, audio, user, chatLogs, answer, isInit } = req.body;
@@ -31,30 +32,34 @@ export default function handler(
             const base64Data = audio.replace(/^data:audio\/wav;base64,/, '');
             const currentDate = new Date().getTime();
 
-            const recordsDir = path.join(__dirname, '..', '..', 'public', 'audio', 'records');
+            const recordsDir = path.join(process.cwd(), 'public', 'audio', 'records');
             const userDir = path.join(recordsDir, user);
 
             if (!fs.existsSync(recordsDir)) {
                 fs.mkdirSync(recordsDir, { recursive: true });
+                logger.info(`Created directory: ${recordsDir}`);
             }
 
             if (!fs.existsSync(userDir)) {
                 fs.mkdirSync(userDir, { recursive: true });
+                logger.info(`Created directory: ${userDir}`);
             }
 
             const userAudioDir = path.join(userDir, 'user');
             if (!fs.existsSync(userAudioDir)) {
                 fs.mkdirSync(userAudioDir, { recursive: true });
+                logger.info(`Created directory: ${userAudioDir}`);
             }
 
             if (!isInit) {
                 const fileName = path.join(userAudioDir, `${currentDate}.wav`);
-                console.log("User audio path", fileName);
+                logger.info(`Saving user audio to: ${fileName}`);
                 fs.writeFileSync(fileName, base64Data, 'base64');
             }
 
             // Write chat logs to file txt
             const chatLogsPath = path.join(userDir, 'chatLogs.txt');
+            logger.info(`Saving chat logs to: ${chatLogsPath}`);
             fs.writeFileSync(chatLogsPath, JSON.stringify([...chatLogs, { role: "user", content: answer }, { role: "assistant", content: text }], null, 2));
 
             const writeFile = util.promisify(fs.writeFile);
@@ -75,25 +80,24 @@ export default function handler(
             const assistantDir = path.join(userDir, 'assistant');
             if (!fs.existsSync(assistantDir)) {
                 fs.mkdirSync(assistantDir, { recursive: true });
+                logger.info(`Created directory: ${assistantDir}`);
             }
             const assistantAudioPath = path.join(assistantDir, `${currentDate}.mp3`);
+            logger.info(`Saving assistant audio to: ${assistantAudioPath}`);
             await writeFile(assistantAudioPath, response.audioContent, 'binary');
-            console.log(`Audio content written to file: ${assistantAudioPath}`);
+            logger.info(`Audio content written to file: ${assistantAudioPath}`);
+
             res.status(200).json({
                 ...response,
-                src: assistantAudioPath.replace(path.join(__dirname, '..', '..', 'public'), '')
+                src: assistantAudioPath.replace(path.join(process.cwd(), 'public'), '')
             });
-        });
+        } catch (err) {
+            logger.error(`An error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            res.status(500).json({ error: err instanceof Error ? err.message : 'Error processing request' });
+        }
     };
 
-    TTS().then(() => {
-    }).catch((err) => {
-        console.log(err);
-        if (err instanceof Error) {
-            logger.error(`An error occurred: ${err.message}`);
-        }
-        return res.status(500).json({ error: err.message });
-    });
+    TTS();
 }
 
 export const getGCPCredentials = () => {
@@ -111,15 +115,17 @@ export const getGCPCredentials = () => {
 };
 
 async function authenticateImplicitWithAdc() {
-    const storage = new Storage(getGCPCredentials());
-    const [buckets] = await storage.getBuckets();
-    console.log('Buckets:');
-
-    for (const bucket of buckets) {
-        console.log(`- ${bucket.name}`);
+    try {
+        const storage = new Storage(getGCPCredentials());
+        const [buckets] = await storage.getBuckets();
+        logger.info('Buckets:');
+        for (const bucket of buckets) {
+            logger.info(`- ${bucket.name}`);
+        }
+        logger.info('Listed all storage buckets.');
+    } catch (err) {
+        logger.error(`Error authenticating with ADC: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
-
-    console.log('Listed all storage buckets.');
 }
 
 authenticateImplicitWithAdc();
