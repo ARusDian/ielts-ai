@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 const textToSpeech = require('@google-cloud/text-to-speech');
 const { Storage } = require('@google-cloud/storage');
 const fs = require('fs');
+const path = require('path');
 const util = require('util');
 const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
 
@@ -13,9 +14,8 @@ export const config = {
             sizeLimit: '100mb',
         },
     },
-    // Specifies the maximum allowed duration for this function to execute (in seconds)
     maxDuration: 20,
-}
+};
 
 export default function handler(
     req: NextApiRequest,
@@ -25,31 +25,36 @@ export default function handler(
         await authenticateImplicitWithAdc().then(async () => {
             const client = new textToSpeech.TextToSpeechClient();
 
-            const { text, audio, user, chatLogs, answer, isInit } = req.body;   
-                        
-            // safe base64 wav file to disk
+            const { text, audio, user, chatLogs, answer, isInit } = req.body;
+
+            // Safe base64 wav file to disk
             const base64Data = audio.replace(/^data:audio\/wav;base64,/, '');
-            const currentDate = new Date().getTime()
+            const currentDate = new Date().getTime();
 
-            if (!fs.existsSync('public/audio/records/')) {
-                fs.mkdirSync('public/audio/records/');
+            const recordsDir = path.join(__dirname, '..', '..', 'public', 'audio', 'records');
+            const userDir = path.join(recordsDir, user);
+
+            if (!fs.existsSync(recordsDir)) {
+                fs.mkdirSync(recordsDir, { recursive: true });
             }
 
-            const path = 'public/audio/records/' + user + '/';
-            if (!fs.existsSync(path)) {
-                fs.mkdirSync(path);
+            if (!fs.existsSync(userDir)) {
+                fs.mkdirSync(userDir, { recursive: true });
             }
 
-            if (!fs.existsSync(path + "user/")) {
-                fs.mkdirSync(path + "user/");
+            const userAudioDir = path.join(userDir, 'user');
+            if (!fs.existsSync(userAudioDir)) {
+                fs.mkdirSync(userAudioDir, { recursive: true });
             }
+
             if (!isInit) {
-                const fileName = "user/" + currentDate + '.wav'
-                console.log("User audio path", path + fileName)
-                fs.writeFileSync(path + fileName, base64Data, 'base64');
+                const fileName = path.join(userAudioDir, `${currentDate}.wav`);
+                console.log("User audio path", fileName);
+                fs.writeFileSync(fileName, base64Data, 'base64');
             }
-            // write chat logs to file txt
-            const chatLogsPath = path + "chatLogs" + '.txt'
+
+            // Write chat logs to file txt
+            const chatLogsPath = path.join(userDir, 'chatLogs.txt');
             fs.writeFileSync(chatLogsPath, JSON.stringify([...chatLogs, { role: "user", content: answer }, { role: "assistant", content: text }], null, 2));
 
             const writeFile = util.promisify(fs.writeFile);
@@ -67,18 +72,20 @@ export default function handler(
                 },
             };
             const [response] = await client.synthesizeSpeech(request);
-            const dir = path + 'assistant/';
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir);
+            const assistantDir = path.join(userDir, 'assistant');
+            if (!fs.existsSync(assistantDir)) {
+                fs.mkdirSync(assistantDir, { recursive: true });
             }
-            await writeFile(dir  + currentDate + '.mp3', response.audioContent, 'binary');
-            console.log(`Audio content written to file: ${dir + currentDate + '.mp3'}`);
+            const assistantAudioPath = path.join(assistantDir, `${currentDate}.mp3`);
+            await writeFile(assistantAudioPath, response.audioContent, 'binary');
+            console.log(`Audio content written to file: ${assistantAudioPath}`);
             res.status(200).json({
                 ...response,
-                src: dir.replace("public/", "") + currentDate + '.mp3'
-            })
+                src: assistantAudioPath.replace(path.join(__dirname, '..', '..', 'public'), '')
+            });
         });
-    }
+    };
+
     TTS().then(() => {
     }).catch((err) => {
         console.log(err);
@@ -90,7 +97,6 @@ export default function handler(
 }
 
 export const getGCPCredentials = () => {
-    // for Vercel, use environment variables
     return process.env.GCP_PRIVATE_KEY
         ? {
             credentials: {
@@ -99,19 +105,12 @@ export const getGCPCredentials = () => {
             },
             projectId: process.env.GCP_PROJECT_ID,
         }
-        // for local development, use gcloud CLI
         : {
             projectId: process.env.GCP_PROJECT_ID,
         };
 };
 
-
-
 async function authenticateImplicitWithAdc() {
-    // This snippet demonstrates how to list buckets.
-    // NOTE: Replace the client created below with the client required for your application.
-    // Note that the credentials are not specified when constructing the client.
-    // The client library finds your credentials using ADC.
     const storage = new Storage(getGCPCredentials());
     const [buckets] = await storage.getBuckets();
     console.log('Buckets:');
