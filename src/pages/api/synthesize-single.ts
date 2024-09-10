@@ -1,3 +1,4 @@
+import logger from "@/utils/logger";
 import { NextApiRequest, NextApiResponse } from "next";
 const textToSpeech = require('@google-cloud/text-to-speech');
 const { Storage } = require('@google-cloud/storage');
@@ -81,6 +82,9 @@ export default function handler(
     TTS().then(() => {
     }).catch((err) => {
         console.log(err);
+        if (err instanceof Error) {
+            logger.error(`An error occurred: ${err.message}`);
+        }
         return res.status(500).json({ error: err.message });
     });
 }
