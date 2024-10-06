@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const user = req.body.user;
 
     // Ensure environment variable is used correctly for Python path
-    const pythonPath = process.env.PYTHON_PATH;
+    const pythonPath = process.env.NEXT_PUBLIC_PYTHON_PATH;
     if (!pythonPath) {
         console.error("Python path is not defined in environment variables.");
         res.status(500).json({ error: 'Python path is not set in the environment.' });
