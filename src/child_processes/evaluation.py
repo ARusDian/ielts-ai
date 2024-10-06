@@ -11,9 +11,29 @@ from typing import Union
 from openai import OpenAI
 import argparse
 from dotenv import load_dotenv, find_dotenv
+import logging
 
 
-root_path = "public/audio/records"
+# Konfigurasi logging
+def setup_logger(log_file: str):
+    """
+    Setup logger to log error messages to a file.
+
+    Args:
+        log_file (str): Path to the log file.
+    """
+    # Set up logging configuration
+    logging.basicConfig(
+        level=logging.ERROR,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler(log_file),  # Log to file
+            logging.StreamHandler(),  # Optional: Print to console
+        ],
+    )
+
+
+root_path = os.path.join(os.getcwd(), "public/audio/records")
 global CLIENT
 
 
@@ -315,6 +335,12 @@ def fluency_coherence_score(list_chat, sound_dir, all_sentences):
     """
     durations = getWavDuration(sound_dir)
     word_lengths = []
+    
+    if len(durations) == 0:
+        raise ValueError("No .wav files found in the sound directory.")
+    
+    if len(durations) != len(list_chat):
+        raise ValueError("The lengths of durations and list_chat do not match.")
 
     for chat in list_chat:
         word_lengths.append(len(chat.split()))
@@ -423,11 +449,15 @@ def get_chatgpt_response(
                 return ast.literal_eval(response_content)
 
         except (json.JSONDecodeError, SyntaxError):
+            logging.error(f"Failed to parse response as JSON: {response_content}")
             continue  # Continue to the next attempt if parsing fails
+            
         except Exception as e:
             print(f"Error: {e}")
+            logging.error(f"Error: {e}")
             continue
 
+    logging.error("Failed to get a response from the AI after multiple attempts.")
     raise Exception("Failed to get a response from the AI after multiple attempts.")
 
 
@@ -442,5 +472,10 @@ if __name__ == "__main__":
     api_key = os.getenv("NEXT_PUBLIC_OPENAI_API_KEY")
     args = parser.parse_args()
     CLIENT = OpenAI(api_key=api_key)
+    log_dir = os.path.join(os.getcwd(), "./logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file_path = os.path.join(log_dir, "evaluation-error.log")
+    
+    setup_logger(log_file_path)
 
     print(evaluate_conversation(args.user))
