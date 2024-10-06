@@ -219,15 +219,16 @@ export default function index() {
     }, [base64]);
 
     useEffect(() => {
-
         const getResult = async () => {
             setIsResultReady(false);
             const maxAttempt = 10;
-            console.log("getting Result...")
+            console.log("getting Result...");
             let isDone = false;
+
             for (let i = 0; i < maxAttempt; i++) {
                 try {
-                    fetch("/api/result", {
+                    console.log("attempt :", i);
+                    const response = await fetch("/api/result", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
@@ -235,29 +236,31 @@ export default function index() {
                         body: JSON.stringify({
                             user: userName,
                         }),
-                    }).then((res) => res.json()).then(
-                        (data) => {
-                            console.log("data :", data);
-                            setResult(data);
-                            setIsResultReady(true);
-                            isDone = true;
-                        }
-                    );
+                    });
+
+                    const data = await response.json();
+                    console.log("data :", data);
+                    setResult(data);
+                    setIsResultReady(true);
+                    isDone = true;
+
                     if (isDone) {
+                        console.log("done");
                         break;
                     }
                 } catch (err: unknown) {
                     console.log("Error :", err);
                     console.log("retrying :", i);
                     setErrorResult({ isErrorResult: false, message: `Trying gathering your results for ${i} times.` });
+
                     const isLastAttempt = i + 1 === maxAttempt;
                     if (isLastAttempt) {
-
                         setErrorResult({ isErrorResult: true, message: "We can not retrieve your results, please check your internet connection!" });
                     }
                 }
             }
         };
+
 
 
         if (showResultModal) {
