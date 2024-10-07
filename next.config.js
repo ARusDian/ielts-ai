@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // ondeply only
+  assetPrefix: "https://dev-ielt.itk.ac.id",
   env: {
     GCP_PRIVATE_KEY: process.env.GCP_PRIVATE_KEY,
     GCP_PROJECT_ID: process.env.GCP_PROJECT_ID,
